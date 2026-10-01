@@ -208,19 +208,21 @@ export const RIDDLES = [
 
 /**
  * PUNTOS INTERACTIVOS en el mundo 3D
- * Posiciones donde aparecen los objetos interactuables (puertas, mesas, etc.)
- * Ajusta x, y, z según el modelo 3D del hospital
+ * Todos concentrados en UN SOLO PASILLO del hospital.
  * 
- * El sistema detecta si el jugador está a menos de `radius` unidades
- * y muestra el prompt de interacción.
+ * El jugador empieza en (0, 0, 0) y camina en línea recta.
+ * Cada punto está separado ~4 unidades del anterior.
+ * 
+ * ⚙️ Si necesitas mover los puntos (porque están dentro de una pared),
+ * ajusta los valores x y z aquí. El y siempre en 0.
  */
 export const INTERACTION_POINTS = [
-  { workId: 'work-1', position: { x:  2, y: 0, z: -5  }, radius: 2.5, label: 'Mesa de Operaciones' },
-  { workId: 'work-2', position: { x: -3, y: 0, z: -10 }, radius: 2.5, label: 'Gaveta de Morgue'    },
-  { workId: 'work-3', position: { x:  6, y: 0, z: -8  }, radius: 2.5, label: 'Pizarra del Lab'     },
-  { workId: 'work-4', position: { x: -6, y: 0, z: -15 }, radius: 2.5, label: 'Celda Psiquiátrica'  },
-  { workId: 'work-5', position: { x:  0, y: 0, z: -20 }, radius: 2.5, label: 'Archivador'          },
-  { workId: 'work-6', position: { x:  4, y: 0, z: -25 }, radius: 2.5, label: 'Altar de la Capilla' },
-  { workId: 'work-7', position: { x: -4, y: 0, z: -30 }, radius: 2.5, label: 'Máquina de Rayos X'  },
-  { workId: 'work-8', position: { x:  0, y: 0, z: -35 }, radius: 2.5, label: 'Despacho del Director'},
+  { workId: 'work-1', position: { x:  0, y: 0, z:  -2 }, radius: 2.5, label: 'Mesa de Operaciones'   },
+  { workId: 'work-2', position: { x:  0, y: 0, z:  -6 }, radius: 2.5, label: 'Gaveta de Morgue'       },
+  { workId: 'work-3', position: { x:  0, y: 0, z: -10 }, radius: 2.5, label: 'Pizarra del Laboratorio'},
+  { workId: 'work-4', position: { x:  0, y: 0, z: -14 }, radius: 2.5, label: 'Celda Psiquiátrica'     },
+  { workId: 'work-5', position: { x:  0, y: 0, z: -18 }, radius: 2.5, label: 'Archivador'             },
+  { workId: 'work-6', position: { x:  0, y: 0, z: -22 }, radius: 2.5, label: 'Altar de la Capilla'    },
+  { workId: 'work-7', position: { x:  0, y: 0, z: -26 }, radius: 2.5, label: 'Máquina de Rayos X'     },
+  { workId: 'work-8', position: { x:  0, y: 0, z: -30 }, radius: 2.5, label: 'Despacho del Director'  },
 ];
