@@ -6,9 +6,10 @@ import { PORTFOLIO_ITEMS, RIDDLES } from './data.js';
 import { audioManager }             from './audio.js';
 
 export class UIManager {
-  constructor(onStartGame, onRestart) {
+  constructor(onStartGame, onRestart, onStartVR) {
     this.onStartGame = onStartGame;
     this.onRestart   = onRestart;
+    this.onStartVR   = onStartVR;
 
     // Estado del juego
     this.collectedKeys  = new Set();
@@ -40,6 +41,14 @@ export class UIManager {
     document.getElementById('btn-start')?.addEventListener('click', () => {
       audioManager.startAmbient();
       this.onStartGame();
+    });
+
+    // Botones WebXR VR (pantalla de inicio y HUD)
+    document.getElementById('btn-vr-intro')?.addEventListener('click', () => {
+      this.onStartVR?.();
+    });
+    document.getElementById('btn-vr-hud')?.addEventListener('click', () => {
+      this.onStartVR?.();
     });
 
     // Mute
@@ -189,8 +198,10 @@ export class UIManager {
       const workId = this.activeRiddle.workId;
       setTimeout(() => {
         this.closeRiddle();
-        this._collectKey(workId);
-      }, 1800);
+        this._showLoadingTransition(workId, () => {
+          this._collectKey(workId);
+        });
+      }, 1200);
 
     } else {
       // ❌ Incorrecto
@@ -210,6 +221,46 @@ export class UIManager {
     }
   }
 
+  // ── TRANSICIÓN ANIMADA ENTRE ACERTIJO Y PORTAFOLIO ──────────
+  _showLoadingTransition(workId, onComplete) {
+    const screenTrans = document.getElementById('screen-transition');
+    const bar = document.getElementById('transition-bar');
+    const title = document.getElementById('transition-title');
+    const subtitle = document.getElementById('transition-subtitle');
+    const status = document.getElementById('transition-status');
+    const item = PORTFOLIO_ITEMS.find(p => p.id === workId);
+
+    if (!screenTrans) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    if (title && item) title.textContent = `EXPEDIENTE: ${item.room.toUpperCase()}`;
+    if (subtitle) subtitle.textContent = 'Acceso concedido — Desencriptando datos clínicos…';
+    if (status) status.textContent = 'Cargando proyecto…';
+    if (bar) bar.style.width = '0%';
+
+    screenTrans.classList.remove('hidden');
+    audioManager.playSFX('key');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 20) + 16;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        if (bar) bar.style.width = '100%';
+        if (status) status.textContent = '¡Expediente y proyecto cargados!';
+        setTimeout(() => {
+          screenTrans.classList.add('hidden');
+          if (onComplete) onComplete();
+        }, 400);
+      } else {
+        if (bar) bar.style.width = `${progress}%`;
+      }
+    }, 220);
+  }
+
   closeRiddle() {
     document.getElementById('modal-riddle')?.classList.add('hidden');
     this.activeRiddle = null;
@@ -219,20 +270,17 @@ export class UIManager {
   _collectKey(workId) {
     if (this.collectedKeys.has(workId)) return;
     this.collectedKeys.add(workId);
-    audioManager.playSFX('key');
 
     // Animar slot de llave
     const slot = document.getElementById(`key-slot-${workId}`);
     slot?.classList.add('collected');
 
     // Desbloquear trabajo
-    setTimeout(() => {
-      this.unlockedWorks.add(workId);
-      audioManager.playSFX('unlock');
-      this._updateProgress();
-      this.openPortfolio(workId);
-      this._checkWinCondition();
-    }, 800);
+    this.unlockedWorks.add(workId);
+    audioManager.playSFX('unlock');
+    this._updateProgress();
+    this.openPortfolio(workId);
+    this._checkWinCondition();
   }
 
   // ── PROGRESO ──────────────────────────────────────────────
@@ -317,6 +365,7 @@ export class UIManager {
     this.unlockedWorks.clear();
     this._updateProgress();
     document.querySelectorAll('.key-slot').forEach(s => s.classList.remove('collected'));
+    document.getElementById('screen-transition')?.classList.add('hidden');
     this.closeRiddle();
     this.closePortfolio();
     this.closePause();

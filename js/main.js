@@ -15,8 +15,18 @@ let gameStarted = false;
 async function init() {
   const canvas = document.getElementById('game-canvas');
 
-  // Crear UI (con callbacks)
-  ui = new UIManager(startGame, restartGame);
+  // Callback para iniciar sesión VR en WebXR
+  const handleStartVR = async () => {
+    if (!gameStarted) {
+      await startGame();
+    }
+    if (engine) {
+      await engine.startVRSession();
+    }
+  };
+
+  // Crear UI (con callbacks: startGame, restartGame, startVR)
+  ui = new UIManager(startGame, restartGame, handleStartVR);
 
   // Mostrar pantalla de inicio
   ui.showScreen('screen-intro');
@@ -47,7 +57,7 @@ async function init() {
   // Click en canvas para re-lockear el puntero
   canvas?.addEventListener('click', () => {
     if (gameStarted && !engine?.isPointerLocked) {
-      const anyModalOpen = ['modal-riddle', 'modal-portfolio', 'modal-pause']
+      const anyModalOpen = ['modal-riddle', 'modal-portfolio', 'modal-pause', 'screen-transition']
         .some(id => !document.getElementById(id)?.classList.contains('hidden'));
       if (!anyModalOpen) engine?.lockPointer();
     }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hospital Olvidado — Portafolio</title>
+  <title>Hospital Olvidado — Portafolio Interactivo 3D</title>
   <link rel="stylesheet" href="css/style.css" />
   <!-- Three.js CDN -->
   <script type="importmap">
@@ -27,14 +27,21 @@
         <p>El Hospital Santa Lucía cerró sus puertas en 1987.<br>
         Nadie sabe exactamente qué ocurrió.<br>
         Lo que sí se sabe es que adentro… hay secretos.</p>
-        <p>Recorre los pasillos. Resuelve los acertijos.<br>
+        <p>Recorre los pasillos y salas. Resuelve los acertijos.<br>
         Recoge las <span class="key-highlight">🗝 llaves</span>.<br>
         Y descubre el trabajo que se esconde en las sombras.</p>
       </div>
-      <button id="btn-start" class="btn-horror">
-        <span>ENTRAR AL HOSPITAL</span>
-      </button>
-      <p class="warning-text">⚠ Activa el sonido para la experiencia completa</p>
+
+      <div class="intro-actions-row">
+        <button id="btn-start" class="btn-horror">
+          <span>ENTRAR AL HOSPITAL</span>
+        </button>
+        <button id="btn-vr-intro" class="btn-horror vr-btn">
+          <span>🥽 MODO WEBXR (VR)</span>
+        </button>
+      </div>
+
+      <p class="warning-text">⚠ Activa el sonido para la experiencia inmersiva completa</p>
     </div>
   </div>
 
@@ -46,7 +53,7 @@
       <div class="progress-bar-container">
         <div id="progress-bar" class="progress-bar"></div>
       </div>
-      <p id="loading-text">Inicializando…</p>
+      <p id="loading-text">Inicializando motor WebGPU/WebGL…</p>
     </div>
   </div>
 
@@ -71,7 +78,7 @@
     <!-- Controles hint -->
     <div id="controls-hint">
       <span>WASD Mover</span>
-      <span>Mouse Rotar</span>
+      <span>Mouse Mirar</span>
       <span>E Interactuar</span>
       <span>ESC Pausa</span>
     </div>
@@ -81,8 +88,25 @@
       <p id="interaction-text">Presiona <kbd>E</kbd> para interactuar</p>
     </div>
 
-    <!-- Audio controls -->
-    <button id="btn-mute" title="Silenciar/Activar música">🔊</button>
+    <!-- Audio controls y botón VR -->
+    <div class="hud-actions-corner">
+      <button id="btn-vr-hud" class="btn-icon-hud" title="Modo Realidad Virtual (WebXR)">🥽</button>
+      <button id="btn-mute" class="btn-icon-hud" title="Silenciar/Activar música">🔊</button>
+    </div>
+  </div>
+
+  <!-- ════════ PANTALLA: TRANSICIÓN ANIMADA DE ACERTIJO ════════ -->
+  <div id="screen-transition" class="screen-transition hidden">
+    <div class="transition-backdrop"></div>
+    <div class="transition-box">
+      <div class="transition-key-icon">🗝️</div>
+      <h2 id="transition-title" class="transition-title">CERRADURA DESBLOQUEADA</h2>
+      <p id="transition-subtitle" class="transition-subtitle">Desencriptando expediente clínico…</p>
+      <div class="transition-bar-wrap">
+        <div id="transition-bar" class="transition-bar"></div>
+      </div>
+      <p id="transition-status" class="transition-status">Cargando proyecto…</p>
+    </div>
   </div>
 
   <!-- ════════ MODAL: ACERTIJO ════════ -->
@@ -140,9 +164,7 @@
   </div>
 
   <!-- Audio elements -->
-  <audio id="audio-ambient" loop preload="auto">
-    <!-- Agrega tu archivo de música aquí: assets/audio/ambient.mp3 -->
-  </audio>
+  <audio id="audio-ambient" loop preload="auto"></audio>
   <audio id="audio-footstep-1" preload="auto"></audio>
   <audio id="audio-footstep-2" preload="auto"></audio>
   <audio id="audio-unlock" preload="auto"></audio>
