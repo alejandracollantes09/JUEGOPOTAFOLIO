@@ -1,0 +1,20 @@
+{
+  "name": "juego-portafolio-hospital",
+  "version": "1.0.0",
+  "description": "Hospital Olvidado — Portafolio Interactivo de Terror 3D",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve . -l 8080",
+    "start": "npx serve . -l 8080"
+  },
+  "keywords": [
+    "threejs",
+    "portfolio",
+    "horror",
+    "game",
+    "3d"
+  ],
+  "author": "Alejandra & Josefina",
+  "license": "MIT"
+}
