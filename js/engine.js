@@ -250,12 +250,17 @@ export class HospitalEngine {
             -center.z * scale
           );
 
-          // Posicionar cámara en el suelo del modelo
-          this.camera.position.set(0, PLAYER_HEIGHT, 0);
+          // ── Posicionar cámara fuera del modelo ──
+          const worldBox = new THREE.Box3().setFromObject(model);
+          // Spawn justo frente al modelo, a la altura del jugador
+          this.camera.position.set(
+            0,
+            PLAYER_HEIGHT,
+            worldBox.max.z + 3   // 3 unidades al frente de la fachada
+          );
 
-          // Ajustar niebla al tamaño escalado
-          this.scene.fog.near = 1;
-          this.scene.fog.far  = Math.min(targetSize * 0.8, 35);
+          // Sin niebla para ver bien el modelo al inicio
+          this.scene.fog = null;
 
           // Sombras y materiales
           model.traverse(child => {
