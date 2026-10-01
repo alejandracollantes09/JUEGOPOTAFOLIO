@@ -67,42 +67,47 @@ async function init() {
 // ── Iniciar juego ────────────────────────────────────────
 async function startGame() {
   ui.showScreen('screen-loading');
-  ui.setLoadingProgress(0, 'Inicializando motor…');
+  ui.setLoadingProgress(5, 'Inicializando motor 3D…');
 
-  const canvas = document.getElementById('game-canvas');
+  try {
+    const canvas = document.getElementById('game-canvas');
 
-  // Crear el motor 3D
-  engine = new HospitalEngine(
-    canvas,
-    // Callback: interacción con objeto
-    (workId) => {
-      const opened = ui.openRiddle(workId, engine);
-      if (!opened) {
-        // Ya desbloqueado — mostrar portafolio directamente
-        ui.openPortfolio(workId);
-        engine.unlockPointer();
+    // Crear el motor 3D
+    engine = new HospitalEngine(
+      canvas,
+      // Callback: interacción con objeto
+      (workId) => {
+        const opened = ui.openRiddle(workId, engine);
+        if (!opened) {
+          // Ya desbloqueado — mostrar portafolio directamente
+          ui.openPortfolio(workId);
+          engine.unlockPointer();
+        }
+      },
+      // Callback: progreso de carga
+      (percent, text) => {
+        ui.setLoadingProgress(percent, text);
       }
-    },
-    // Callback: progreso de carga
-    (percent, text) => {
-      ui.setLoadingProgress(percent, text);
-    }
-  );
+    );
 
-  // Cargar el modelo del hospital
-  ui.setLoadingProgress(10, 'Cargando hospital…');
-  await engine.loadHospitalModel('assets/models/hospital.glb');
+    // Cargar el modelo del hospital
+    ui.setLoadingProgress(15, 'Cargando hospital…');
+    await engine.loadHospitalModel('assets/models/hospital.glb');
 
-  ui.setLoadingProgress(100, '¡Listo!');
-  await delay(600);
+    ui.setLoadingProgress(100, '¡Listo!');
+    await delay(400);
 
-  // Mostrar pantalla de juego
-  ui.showScreen('screen-game');
-  engine.start();
+    // Mostrar pantalla de juego
+    ui.showScreen('screen-game');
+    engine.start();
 
-  // Mostrar overlay "Click para jugar" — el PointerLock requiere click del usuario
-  gameStarted = true;
-  showClickToPlay();
+    // Mostrar overlay "Click para jugar" — el PointerLock requiere click del usuario
+    gameStarted = true;
+    showClickToPlay();
+  } catch (err) {
+    console.error('[Error al iniciar el hospital]', err);
+    ui.setLoadingProgress(100, 'Error: ' + (err.message || err));
+  }
 }
 
 // ── Reiniciar juego ───────────────────────────────────────

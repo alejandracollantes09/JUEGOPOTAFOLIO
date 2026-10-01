@@ -16,5 +16,8 @@
     "3d"
   ],
   "author": "Alejandra & Josefina",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  }
 }

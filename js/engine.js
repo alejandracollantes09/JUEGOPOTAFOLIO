@@ -5,7 +5,6 @@
 
 import * as THREE from 'three';
 import { GLTFLoader }        from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader }       from 'three/addons/loaders/DRACOLoader.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { INTERACTION_POINTS }  from './data.js';
 import { audioManager }        from './audio.js';
@@ -276,12 +275,7 @@ export class HospitalEngine {
   // ── CARGA DEL MODELO GLB + APERTURA DE PUERTAS + SPAWN SEGURO ──
   loadHospitalModel(path = 'assets/models/hospital.glb') {
     return new Promise((resolve) => {
-      const dracoLoader = new DRACOLoader();
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
-
       const loader = new GLTFLoader();
-      loader.setDRACOLoader(dracoLoader);
-
       this.onProgress(0, 'Cargando hospital…');
 
       loader.load(
