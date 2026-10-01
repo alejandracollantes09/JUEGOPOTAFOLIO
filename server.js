@@ -101,7 +101,9 @@ function createServerOnPort(portIndex = 0) {
           'Content-Length': totalSize,
           'Content-Type': mime,
           'Accept-Ranges': 'bytes',
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         });
 
         const stream = fs.createReadStream(filePath);
