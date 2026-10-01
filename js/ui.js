@@ -1,0 +1,324 @@
+// ════════════════════════════════════════════════════════
+//  HOSPITAL OLVIDADO — Interfaz de Usuario (UI)
+// ════════════════════════════════════════════════════════
+
+import { PORTFOLIO_ITEMS, RIDDLES } from './data.js';
+import { audioManager }             from './audio.js';
+
+export class UIManager {
+  constructor(onStartGame, onRestart) {
+    this.onStartGame = onStartGame;
+    this.onRestart   = onRestart;
+
+    // Estado del juego
+    this.collectedKeys  = new Set();
+    this.unlockedWorks  = new Set();
+    this.totalWorks     = PORTFOLIO_ITEMS.length;
+    this.activeRiddle   = null;
+
+    this._buildKeySlots();
+    this._bindButtons();
+  }
+
+  // ── SLOTS DE LLAVES EN HUD ───────────────────────────────
+  _buildKeySlots() {
+    const container = document.getElementById('key-slots');
+    if (!container) return;
+    PORTFOLIO_ITEMS.forEach(item => {
+      const slot = document.createElement('div');
+      slot.className = 'key-slot';
+      slot.id        = `key-slot-${item.id}`;
+      slot.title     = item.room;
+      slot.textContent = '🗝';
+      container.appendChild(slot);
+    });
+  }
+
+  // ── BINDING DE BOTONES ───────────────────────────────────
+  _bindButtons() {
+    // Botón inicio
+    document.getElementById('btn-start')?.addEventListener('click', () => {
+      audioManager.startAmbient();
+      this.onStartGame();
+    });
+
+    // Mute
+    document.getElementById('btn-mute')?.addEventListener('click', () => {
+      const muted = audioManager.toggleMute();
+      const btn = document.getElementById('btn-mute');
+      if (btn) btn.textContent = muted ? '🔇' : '🔊';
+    });
+
+    // Riddle: enviar respuesta
+    document.getElementById('btn-riddle-submit')?.addEventListener('click', () => {
+      this._submitRiddle();
+    });
+
+    // Riddle: cerrar sin responder
+    document.getElementById('btn-riddle-close')?.addEventListener('click', () => {
+      this.closeRiddle();
+    });
+
+    // Portfolio: cerrar
+    document.getElementById('btn-portfolio-close')?.addEventListener('click', () => {
+      this.closePortfolio();
+    });
+
+    // Pausa: continuar
+    document.getElementById('btn-resume')?.addEventListener('click', () => {
+      this.closePause();
+    });
+
+    // Pausa: reiniciar
+    document.getElementById('btn-restart')?.addEventListener('click', () => {
+      this.closePause();
+      this.onRestart();
+    });
+
+    // Jugar de nuevo en pantalla de victoria
+    document.getElementById('btn-play-again')?.addEventListener('click', () => {
+      this.onRestart();
+    });
+
+    // Tecla E para responder riddle con Enter
+    document.getElementById('riddle-input')?.addEventListener('keydown', e => {
+      if (e.code === 'Enter') this._submitRiddle();
+    });
+
+    // Opciones del riddle — delegación de eventos
+    document.getElementById('riddle-options')?.addEventListener('click', e => {
+      const btn = e.target.closest('.riddle-option');
+      if (!btn) return;
+      const answer = btn.dataset.answer;
+      this._checkAnswer(answer);
+    });
+  }
+
+  // ── PANTALLAS ────────────────────────────────────────────
+  showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
+  }
+
+  // ── PANTALLA DE CARGA ────────────────────────────────────
+  setLoadingProgress(percent, text) {
+    const bar = document.getElementById('progress-bar');
+    const txt = document.getElementById('loading-text');
+    if (bar) bar.style.width = `${percent}%`;
+    if (txt) txt.textContent = text;
+  }
+
+  // ── ABRIR ACERTIJO ────────────────────────────────────────
+  openRiddle(workId, engine) {
+    // Si ya fue desbloqueado, mostrar el portafolio directamente
+    if (this.unlockedWorks.has(workId)) {
+      this.openPortfolio(workId);
+      return false; // no necesita bloquear controles de nuevo
+    }
+
+    const riddle = RIDDLES.find(r => r.workId === workId);
+    if (!riddle) return false;
+
+    this.activeRiddle = riddle;
+
+    // Rellenar el modal
+    const item = PORTFOLIO_ITEMS.find(p => p.id === workId);
+    document.getElementById('riddle-title').textContent =
+      item ? item.room : 'Expediente Clínico';
+
+    const qEl = document.getElementById('riddle-question');
+    if (qEl) {
+      qEl.innerHTML = `<em style="color:var(--text-dim);font-size:0.85rem">${riddle.narrative}</em><br><br>${riddle.question}`;
+    }
+
+    // Limpiar opciones anteriores
+    const optEl   = document.getElementById('riddle-options');
+    const inputEl = document.getElementById('riddle-input');
+    const feedEl  = document.getElementById('riddle-feedback');
+
+    optEl.innerHTML = '';
+    feedEl.textContent = '';
+    feedEl.className   = 'feedback hidden';
+    inputEl.value      = '';
+
+    if (riddle.type === 'multiple') {
+      inputEl.classList.add('hidden');
+      // Mezclar opciones aleatoriamente
+      const shuffled = [...riddle.options].sort(() => Math.random() - 0.5);
+      shuffled.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className    = 'riddle-option';
+        btn.dataset.answer = opt;
+        btn.textContent  = opt;
+        optEl.appendChild(btn);
+      });
+    } else {
+      inputEl.classList.remove('hidden');
+      setTimeout(() => inputEl.focus(), 100);
+    }
+
+    document.getElementById('modal-riddle')?.classList.remove('hidden');
+    engine?.unlockPointer();
+    return true;
+  }
+
+  _submitRiddle() {
+    if (!this.activeRiddle) return;
+    if (this.activeRiddle.type === 'text') {
+      const answer = document.getElementById('riddle-input')?.value.trim();
+      this._checkAnswer(answer);
+    }
+    // Para multiple, se maneja en el click de opción
+  }
+
+  _checkAnswer(answer) {
+    if (!this.activeRiddle) return;
+    const correct = this.activeRiddle.answer.toLowerCase().trim();
+    const given   = (answer ?? '').toLowerCase().trim();
+
+    const feedEl = document.getElementById('riddle-feedback');
+
+    if (given === correct) {
+      // ✅ Correcto
+      audioManager.playSFX('correct');
+      if (feedEl) {
+        feedEl.textContent = this.activeRiddle.correctMsg;
+        feedEl.className   = 'feedback correct';
+        feedEl.classList.remove('hidden');
+      }
+      const workId = this.activeRiddle.workId;
+      setTimeout(() => {
+        this.closeRiddle();
+        this._collectKey(workId);
+      }, 1800);
+
+    } else {
+      // ❌ Incorrecto
+      audioManager.playSFX('wrong');
+      if (feedEl) {
+        feedEl.textContent = this.activeRiddle.wrongMsg;
+        feedEl.className   = 'feedback wrong';
+        feedEl.classList.remove('hidden');
+      }
+      // Resaltar opción incorrecta
+      document.querySelectorAll('.riddle-option').forEach(btn => {
+        if (btn.dataset.answer === answer) {
+          btn.classList.add('wrong');
+          setTimeout(() => btn.classList.remove('wrong'), 1000);
+        }
+      });
+    }
+  }
+
+  closeRiddle() {
+    document.getElementById('modal-riddle')?.classList.add('hidden');
+    this.activeRiddle = null;
+  }
+
+  // ── RECOGER LLAVE ─────────────────────────────────────────
+  _collectKey(workId) {
+    if (this.collectedKeys.has(workId)) return;
+    this.collectedKeys.add(workId);
+    audioManager.playSFX('key');
+
+    // Animar slot de llave
+    const slot = document.getElementById(`key-slot-${workId}`);
+    slot?.classList.add('collected');
+
+    // Desbloquear trabajo
+    setTimeout(() => {
+      this.unlockedWorks.add(workId);
+      audioManager.playSFX('unlock');
+      this._updateProgress();
+      this.openPortfolio(workId);
+      this._checkWinCondition();
+    }, 800);
+  }
+
+  // ── PROGRESO ──────────────────────────────────────────────
+  _updateProgress() {
+    const el = document.getElementById('progress-count');
+    if (el) el.textContent = `${this.unlockedWorks.size} / ${this.totalWorks}`;
+  }
+
+  // ── MOSTRAR PORTAFOLIO ────────────────────────────────────
+  openPortfolio(workId) {
+    const item = PORTFOLIO_ITEMS.find(p => p.id === workId);
+    if (!item) return;
+
+    document.getElementById('portfolio-icon').textContent  = item.icon;
+    document.getElementById('portfolio-title').textContent = item.room;
+
+    const body = document.getElementById('portfolio-body');
+    if (body) {
+      body.innerHTML = `
+        <div class="portfolio-item">
+          ${item.images.map(src =>
+            `<img src="${src}" alt="${item.title}" loading="lazy"
+                  onerror="this.style.display='none'">`
+          ).join('')}
+          <h3>${item.title}</h3>
+          <p>${item.description}</p>
+          ${item.tools?.length
+            ? `<p style="color:var(--text-dim);font-size:0.8rem;margin-top:0.5rem">
+                <strong>Herramientas:</strong> ${item.tools.join(' · ')}
+               </p>`
+            : ''}
+          ${item.link
+            ? `<a href="${item.link}" target="_blank" rel="noopener">Ver proyecto →</a>`
+            : ''}
+        </div>
+      `;
+    }
+
+    document.getElementById('modal-portfolio')?.classList.remove('hidden');
+  }
+
+  closePortfolio() {
+    document.getElementById('modal-portfolio')?.classList.add('hidden');
+  }
+
+  // ── PAUSA ─────────────────────────────────────────────────
+  openPause() {
+    document.getElementById('modal-pause')?.classList.remove('hidden');
+  }
+
+  closePause() {
+    document.getElementById('modal-pause')?.classList.add('hidden');
+  }
+
+  // ── CONDICIÓN DE VICTORIA ────────────────────────────────
+  _checkWinCondition() {
+    if (this.unlockedWorks.size < this.totalWorks) return;
+
+    setTimeout(() => {
+      audioManager.playSFX('key'); // sonido de victoria
+      this._buildWinLinks();
+      this.showScreen('screen-win');
+    }, 2000);
+  }
+
+  _buildWinLinks() {
+    const container = document.getElementById('win-portfolio-links');
+    if (!container) return;
+    container.innerHTML = '';
+    PORTFOLIO_ITEMS.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className   = 'win-link';
+      btn.textContent = `${item.icon} ${item.room}`;
+      btn.addEventListener('click', () => this.openPortfolio(item.id));
+      container.appendChild(btn);
+    });
+  }
+
+  // ── RESETEAR JUEGO ────────────────────────────────────────
+  reset() {
+    this.collectedKeys.clear();
+    this.unlockedWorks.clear();
+    this._updateProgress();
+    document.querySelectorAll('.key-slot').forEach(s => s.classList.remove('collected'));
+    this.closeRiddle();
+    this.closePortfolio();
+    this.closePause();
+  }
+}

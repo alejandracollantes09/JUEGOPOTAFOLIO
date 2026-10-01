@@ -1,0 +1,18 @@
+Coloca aquí los archivos de audio del juego.
+
+ARCHIVOS REQUERIDOS:
+  ambient.mp3       — Música de terror de fondo (loop)
+  footstep1.mp3     — Sonido de paso (izquierdo)
+  footstep2.mp3     — Sonido de paso (derecho)
+  key_pickup.mp3    — Recoger una llave
+  door_unlock.mp3   — Abrir una puerta
+  correct.mp3       — Acertijo correcto
+  wrong.mp3         — Acertijo incorrecto
+  jumpscare.mp3     — Sonido de susto (opcional)
+
+FUENTES GRATUITAS (sin derechos de autor):
+  - https://freesound.org  (busca: hospital ambience, footsteps concrete)
+  - https://mixkit.co/free-sound-effects/
+  - https://pixabay.com/sound-effects/
+
+FORMATO: .mp3 recomendado (también acepta .ogg)

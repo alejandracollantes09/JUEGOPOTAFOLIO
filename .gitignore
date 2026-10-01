@@ -1,0 +1,23 @@
+# Node / npm
+node_modules/
+npm-debug.log*
+.npm/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.sublime-workspace
+
+# Build artifacts
+dist/
+.parcel-cache/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp

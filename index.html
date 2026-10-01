@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital Olvidado — Portafolio</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Three.js CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ════════ PANTALLA DE INICIO ════════ -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-content">
+      <div class="blood-drip"></div>
+      <h1 class="title-horror">HOSPITAL<br><span>OLVIDADO</span></h1>
+      <p class="subtitle">Un portafolio que no deberías haber encontrado…</p>
+      <div class="intro-story">
+        <p>El Hospital Santa Lucía cerró sus puertas en 1987.<br>
+        Nadie sabe exactamente qué ocurrió.<br>
+        Lo que sí se sabe es que adentro… hay secretos.</p>
+        <p>Recorre los pasillos. Resuelve los acertijos.<br>
+        Recoge las <span class="key-highlight">🗝 llaves</span>.<br>
+        Y descubre el trabajo que se esconde en las sombras.</p>
+      </div>
+      <button id="btn-start" class="btn-horror">
+        <span>ENTRAR AL HOSPITAL</span>
+      </button>
+      <p class="warning-text">⚠ Activa el sonido para la experiencia completa</p>
+    </div>
+  </div>
+
+  <!-- ════════ PANTALLA DE CARGA ════════ -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-content">
+      <div class="hospital-cross">✚</div>
+      <h2>Accediendo al hospital…</h2>
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+      <p id="loading-text">Inicializando…</p>
+    </div>
+  </div>
+
+  <!-- ════════ PANTALLA DE JUEGO ════════ -->
+  <div id="screen-game" class="screen">
+    <!-- Canvas Three.js -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hud-keys">
+        <span class="hud-label">🗝 LLAVES</span>
+        <div id="key-slots"></div>
+      </div>
+      <div id="hud-progress">
+        <span class="hud-label">ARCHIVOS DESBLOQUEADOS</span>
+        <span id="progress-count">0 / 8</span>
+      </div>
+      <div id="hud-crosshair">+</div>
+    </div>
+
+    <!-- Controles hint -->
+    <div id="controls-hint">
+      <span>WASD Mover</span>
+      <span>Mouse Rotar</span>
+      <span>E Interactuar</span>
+      <span>ESC Pausa</span>
+    </div>
+
+    <!-- Mensaje de interacción -->
+    <div id="interaction-prompt" class="hidden">
+      <p id="interaction-text">Presiona <kbd>E</kbd> para interactuar</p>
+    </div>
+
+    <!-- Audio controls -->
+    <button id="btn-mute" title="Silenciar/Activar música">🔊</button>
+  </div>
+
+  <!-- ════════ MODAL: ACERTIJO ════════ -->
+  <div id="modal-riddle" class="modal hidden">
+    <div class="modal-content riddle-content">
+      <div class="modal-header">
+        <span class="modal-icon">📄</span>
+        <h2 id="riddle-title">Expediente Clínico</h2>
+      </div>
+      <div class="riddle-body">
+        <p id="riddle-question"></p>
+        <div id="riddle-options"></div>
+        <input type="text" id="riddle-input" class="riddle-input hidden" placeholder="Escribe tu respuesta…" />
+        <p id="riddle-feedback" class="feedback hidden"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-riddle-submit" class="btn-horror small">RESPONDER</button>
+        <button id="btn-riddle-close" class="btn-close">✕ Huir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ MODAL: PORTAFOLIO ════════ -->
+  <div id="modal-portfolio" class="modal hidden">
+    <div class="modal-content portfolio-content">
+      <div class="modal-header">
+        <span class="modal-icon" id="portfolio-icon">🗂</span>
+        <h2 id="portfolio-title">Expediente Secreto</h2>
+        <button id="btn-portfolio-close" class="btn-close">✕</button>
+      </div>
+      <div id="portfolio-body" class="portfolio-body">
+        <!-- Contenido dinámico -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ MODAL: PAUSA ════════ -->
+  <div id="modal-pause" class="modal hidden">
+    <div class="modal-content pause-content">
+      <h2>— PAUSA —</h2>
+      <p>Sigue siendo de noche afuera…</p>
+      <button id="btn-resume" class="btn-horror">CONTINUAR</button>
+      <button id="btn-restart" class="btn-horror secondary">REINICIAR</button>
+    </div>
+  </div>
+
+  <!-- ════════ PANTALLA: VICTORIA ════════ -->
+  <div id="screen-win" class="screen">
+    <div class="win-content">
+      <h1 class="title-horror gold">ESCAPASTE</h1>
+      <p class="subtitle">Has descubierto todos los secretos del Hospital Olvidado.</p>
+      <div id="win-portfolio-links"></div>
+      <button id="btn-play-again" class="btn-horror">JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <!-- Audio elements -->
+  <audio id="audio-ambient" loop preload="auto">
+    <!-- Agrega tu archivo de música aquí: assets/audio/ambient.mp3 -->
+  </audio>
+  <audio id="audio-footstep-1" preload="auto"></audio>
+  <audio id="audio-footstep-2" preload="auto"></audio>
+  <audio id="audio-unlock" preload="auto"></audio>
+  <audio id="audio-key" preload="auto"></audio>
+  <audio id="audio-riddle-correct" preload="auto"></audio>
+  <audio id="audio-riddle-wrong" preload="auto"></audio>
+  <audio id="audio-jumpscare" preload="auto"></audio>
+
+  <!-- Scripts del juego -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

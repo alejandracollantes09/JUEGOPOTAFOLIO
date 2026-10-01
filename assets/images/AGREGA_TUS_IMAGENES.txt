@@ -1,0 +1,11 @@
+Coloca aquí las imágenes de tus trabajos del portafolio.
+Formatos recomendados: .jpg, .png, .webp
+
+Nombra los archivos como:
+  work1.jpg  — Trabajo 1
+  work2.jpg  — Trabajo 2
+  ...
+  work8.jpg  — Trabajo 8
+
+El código las referencia desde js/data.js en el campo "images".
+Pueden ser múltiples imágenes por trabajo.
