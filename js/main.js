@@ -90,10 +90,9 @@ async function startGame() {
   ui.showScreen('screen-game');
   engine.start();
 
-  // Lockear el puntero tras un momento
-  await delay(300);
-  engine.lockPointer();
+  // Mostrar overlay "Click para jugar" — el PointerLock requiere click del usuario
   gameStarted = true;
+  showClickToPlay();
 }
 
 // ── Reiniciar juego ───────────────────────────────────────
@@ -103,6 +102,41 @@ async function restartGame() {
   engine = null;
   ui.reset();
   await startGame();
+}
+
+// ── Click para jugar (PointerLock requiere gesto del usuario) ────
+function showClickToPlay() {
+  let overlay = document.getElementById('click-to-play');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'click-to-play';
+    overlay.innerHTML = `
+      <div style="
+        position:fixed; inset:0; z-index:80;
+        display:flex; flex-direction:column;
+        align-items:center; justify-content:center;
+        background:rgba(0,0,0,0.75);
+        font-family:'Oswald',sans-serif;
+        cursor:pointer;
+      ">
+        <div style="font-size:3rem; margin-bottom:1rem;">🏥</div>
+        <p style="font-size:1.4rem; color:#c8bfaf; letter-spacing:0.2em; text-transform:uppercase;">
+          Click para entrar al hospital
+        </p>
+        <p style="font-size:0.8rem; color:#555; margin-top:0.5rem; letter-spacing:0.1em;">
+          Mueve el mouse para mirar · WASD para caminar
+        </p>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+
+  const engage = () => {
+    overlay.style.display = 'none';
+    engine.lockPointer();
+    audioManager.startAmbient();
+  };
+  overlay.addEventListener('click', engage, { once: true });
 }
 
 // ── Utilidad ──────────────────────────────────────────────
