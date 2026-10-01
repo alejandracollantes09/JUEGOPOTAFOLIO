@@ -1,3 +1,8 @@
+# ════════════════════════════════════════════════════════
+#  Hospital Olvidado - Servidor Local PowerShell
+#  Streaming por bloques (64KB) y recuperacion de desconexion
+# ════════════════════════════════════════════════════════
+
 $candidatePorts = @(8080, 8081, 8082, 8085, 3000, 5000, 8000)
 $folder = $PSScriptRoot
 
@@ -5,10 +10,12 @@ $mimeTypes = @{
     ".html" = "text/html; charset=utf-8"
     ".css"  = "text/css; charset=utf-8"
     ".js"   = "application/javascript; charset=utf-8"
+    ".mjs"  = "application/javascript; charset=utf-8"
     ".json" = "application/json; charset=utf-8"
     ".png"  = "image/png"
     ".jpg"  = "image/jpeg"
     ".jpeg" = "image/jpeg"
+    ".webp" = "image/webp"
     ".svg"  = "image/svg+xml"
     ".glb"  = "model/gltf-binary"
     ".gltf" = "model/gltf+json"
@@ -51,6 +58,8 @@ Write-Host "Abriendo en tu navegador predeterminado..." -ForegroundColor Gray
 Start-Process $url
 
 while ($listener.IsListening) {
+    $context = $null
+    $fileStream = $null
     try {
         $context = $listener.GetContext()
         $request = $context.Request
@@ -70,19 +79,35 @@ while ($listener.IsListening) {
                 $mime = $mimeTypes[$ext]
             }
 
-            $bytes = [System.IO.File]::ReadAllBytes($filePath)
             $response.ContentType = $mime
-            $response.ContentLength64 = $bytes.Length
             $response.AddHeader("Access-Control-Allow-Origin", "*")
-            $response.OutputStream.Write($bytes, 0, $bytes.Length)
+            $response.AddHeader("Accept-Ranges", "bytes")
+
+            $fileStream = [System.IO.File]::OpenRead($filePath)
+            $response.ContentLength64 = $fileStream.Length
+
+            $buffer = New-Object byte[] 65536
+            while ($fileStream.Position -lt $fileStream.Length) {
+                $bytesRead = $fileStream.Read($buffer, 0, $buffer.Length)
+                if ($bytesRead -le 0) { break }
+                $response.OutputStream.Write($buffer, 0, $bytesRead)
+            }
+            $fileStream.Close()
+            $fileStream = $null
+            $response.Close()
         } else {
             $response.StatusCode = 404
             $msg = "404 Not Found: " + $rawPath
             $buf = [System.Text.Encoding]::UTF8.GetBytes($msg)
             $response.OutputStream.Write($buf, 0, $buf.Length)
+            $response.Close()
         }
-        $response.Close()
     } catch {
-        # Ignore client disconnects
+        if ($fileStream) {
+            try { $fileStream.Close() } catch {}
+        }
+        if ($context -and $context.Response) {
+            try { $context.Response.Abort() } catch {}
+        }
     }
 }
