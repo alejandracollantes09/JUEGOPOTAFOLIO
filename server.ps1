@@ -44,7 +44,7 @@ if (-not $listener) {
 }
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "  Hospital Olvidado — Juego Portafolio 3D               " -ForegroundColor Yellow
+Write-Host "  Hospital Olvidado - Juego Portafolio 3D               " -ForegroundColor Yellow
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "[OK] Servidor iniciado exitosamente en $url" -ForegroundColor Green
 Write-Host "Abriendo en tu navegador predeterminado..." -ForegroundColor Gray
@@ -56,12 +56,12 @@ while ($listener.IsListening) {
         $request = $context.Request
         $response = $context.Response
 
-        $path = $request.Url.LocalPath.TrimStart('/')
-        if ([string]::IsNullOrWhiteSpace($path)) {
-            $path = "index.html"
+        $rawPath = $request.Url.LocalPath.TrimStart('/')
+        if ([string]::IsNullOrWhiteSpace($rawPath)) {
+            $rawPath = "index.html"
         }
 
-        $filePath = Join-Path $folder $path
+        $filePath = Join-Path $folder $rawPath
 
         if (Test-Path $filePath -PathType Leaf) {
             $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
@@ -77,7 +77,8 @@ while ($listener.IsListening) {
             $response.OutputStream.Write($bytes, 0, $bytes.Length)
         } else {
             $response.StatusCode = 404
-            $buf = [System.Text.Encoding]::UTF8.GetBytes("404 Not Found: $path")
+            $msg = "404 Not Found: " + $rawPath
+            $buf = [System.Text.Encoding]::UTF8.GetBytes($msg)
             $response.OutputStream.Write($buf, 0, $buf.Length)
         }
         $response.Close()
