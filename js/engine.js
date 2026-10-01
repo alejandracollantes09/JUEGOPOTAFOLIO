@@ -228,7 +228,7 @@ export class HospitalEngine {
 
   // ── CARGA DEL MODELO GLB ─────────────────────────────────
   loadHospitalModel(path = 'assets/models/hospital.glb') {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const dracoLoader = new DRACOLoader();
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
 
@@ -242,22 +242,48 @@ export class HospitalEngine {
         (gltf) => {
           const model = gltf.scene;
 
-          // Escalar y posicionar el modelo (ajusta según el tamaño real del GLB)
-          model.scale.setScalar(1);
-          model.position.set(0, 0, 0);
+          // ── Auto-fit: calcular tamaño real del modelo ──────────
+          const box    = new THREE.Box3().setFromObject(model);
+          const size   = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(center);
 
-          // Optimizar materiales para el estilo de terror
+          console.log('[GLB] Tamaño real:', size);
+          console.log('[GLB] Centro:', center);
+
+          // Escalar para que la dimensión mayor sea ~40 unidades
+          const maxDim    = Math.max(size.x, size.y, size.z);
+          const targetSize = 40;
+          const scale     = maxDim > 0 ? targetSize / maxDim : 1;
+          model.scale.setScalar(scale);
+          console.log('[GLB] Escala aplicada:', scale);
+
+          // Centrar en X/Z, poner suelo en Y=0
+          model.position.set(
+            -center.x * scale,
+            -box.min.y * scale,
+            -center.z * scale
+          );
+
+          // Posicionar cámara en el suelo del modelo
+          this.camera.position.set(0, PLAYER_HEIGHT, 0);
+
+          // Ajustar niebla al tamaño escalado
+          this.scene.fog.near = 1;
+          this.scene.fog.far  = Math.min(targetSize * 0.8, 35);
+
+          // Sombras y materiales
           model.traverse(child => {
             if (child.isMesh) {
               child.castShadow    = true;
               child.receiveShadow = true;
-              // Oscurecer ligeramente los materiales para el estilo horror
               if (child.material) {
                 const mats = Array.isArray(child.material)
                   ? child.material : [child.material];
                 mats.forEach(mat => {
-                  mat.roughness  = Math.max(mat.roughness ?? 0.5, 0.6);
-                  mat.metalness  = Math.min(mat.metalness ?? 0, 0.3);
+                  mat.roughness = Math.max(mat.roughness ?? 0.5, 0.6);
+                  mat.metalness = Math.min(mat.metalness ?? 0, 0.3);
                 });
               }
             }
@@ -266,17 +292,19 @@ export class HospitalEngine {
           this.scene.add(model);
           this.hospitalModel = model;
           this.onProgress(100, '¡Hospital cargado!');
+          console.log('[GLB] Modelo cargado correctamente ✅');
           resolve(model);
         },
         (xhr) => {
-          const pct = Math.round((xhr.loaded / xhr.total) * 100);
-          this.onProgress(pct, `Cargando hospital… ${pct}%`);
+          if (xhr.total > 0) {
+            const pct = Math.round((xhr.loaded / xhr.total) * 100);
+            this.onProgress(pct, `Cargando hospital… ${pct}%`);
+          }
         },
         (err) => {
-          console.warn('[Hospital Engine] No se pudo cargar el GLB:', err.message);
-          console.info('[Hospital Engine] Usando entorno de respaldo procedural.');
+          console.warn('[Hospital Engine] Error cargando GLB:', err);
           this.onProgress(100, 'Usando entorno de respaldo');
-          resolve(null); // No fatal: usa el entorno de respaldo
+          resolve(null);
         }
       );
     });
