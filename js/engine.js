@@ -143,6 +143,9 @@ export class HospitalEngine {
 
   // ── ENTORNO DE RESPALDO (si no hay GLB) ───────────────────
   _buildFallbackEnvironment() {
+    this._fallbackGroup = new THREE.Group();
+    this._fallbackGroup.name = 'fallback';
+
     // Suelo
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(80, 80),
@@ -150,7 +153,7 @@ export class HospitalEngine {
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
-    this.scene.add(floor);
+    this._fallbackGroup.add(floor);
 
     // Techo
     const ceil = new THREE.Mesh(
@@ -159,71 +162,52 @@ export class HospitalEngine {
     );
     ceil.rotation.x = Math.PI / 2;
     ceil.position.y = 3.5;
-    this.scene.add(ceil);
+    this._fallbackGroup.add(ceil);
 
-    // Pasillos con paredes
-    this._buildCorridor(0, 0, -40, 80, 'Z');
-
-    // Objetos interactuables (cajas/mesas placeholder)
-    INTERACTION_POINTS.forEach(point => {
-      this._createInteractableObject(point);
-    });
-  }
-
-  _buildCorridor(cx, cy, cz, length, axis) {
-    const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x1a1510, roughness: 0.95, metalness: 0.05
-    });
-    const wallGeo = new THREE.BoxGeometry(
-      axis === 'Z' ? 4 : length,
-      3.5,
-      axis === 'Z' ? length : 4
-    );
-
-    // Pared izquierda
-    const left = new THREE.Mesh(wallGeo, wallMat);
-    left.position.set(cx - 2.5, cy + 1.75, cz);
-    left.receiveShadow = left.castShadow = true;
-    this.scene.add(left);
-
-    // Pared derecha
+    // Paredes del pasillo
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1510, roughness: 0.95 });
+    const wallGeo = new THREE.BoxGeometry(4, 3.5, 80);
+    const left  = new THREE.Mesh(wallGeo, wallMat);
+    left.position.set(-2.5, 1.75, -40);
+    this._fallbackGroup.add(left);
     const right = new THREE.Mesh(wallGeo, wallMat);
-    right.position.set(cx + 2.5, cy + 1.75, cz);
-    right.receiveShadow = right.castShadow = true;
-    this.scene.add(right);
+    right.position.set(2.5, 1.75, -40);
+    this._fallbackGroup.add(right);
+
+    // Objetos interactuables placeholder
+    INTERACTION_POINTS.forEach(point => {
+      this._createInteractableObject(point, this._fallbackGroup);
+    });
+
+    this.scene.add(this._fallbackGroup);
   }
 
-  _createInteractableObject(point) {
-    // Mesa/objeto brillante como indicador de punto interactivo
+  _createInteractableObject(point, parent = this.scene) {
     const geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x3a0000,
-      emissive: 0x550000,
-      emissiveIntensity: 0.5,
-      roughness: 0.8,
+      color: 0x3a0000, emissive: 0x550000, emissiveIntensity: 0.5, roughness: 0.8,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(point.position.x, point.position.y + 0.4, point.position.z);
     mesh.castShadow = true;
     mesh.userData = { workId: point.workId, label: point.label };
-    this.scene.add(mesh);
+    parent.add(mesh);
 
-    // Luz puntual roja sobre el objeto
     const glow = new THREE.PointLight(0xff2200, 1, 3);
     glow.position.set(point.position.x, point.position.y + 1.5, point.position.z);
-    this.scene.add(glow);
+    parent.add(glow);
 
-    // Partícula flotante (esfera pequeña)
     const particle = new THREE.Mesh(
       new THREE.SphereGeometry(0.06, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xff4444 })
     );
     particle.position.set(point.position.x, point.position.y + 1.2, point.position.z);
     particle.userData.floatOffset = Math.random() * Math.PI * 2;
-    this.scene.add(particle);
+    parent.add(particle);
 
     if (!this._particles) this._particles = [];
     this._particles.push(particle);
+
   }
 
   // ── CARGA DEL MODELO GLB ─────────────────────────────────
@@ -291,6 +275,19 @@ export class HospitalEngine {
 
           this.scene.add(model);
           this.hospitalModel = model;
+
+          // Eliminar entorno de respaldo — ya tenemos el modelo real
+          if (this._fallbackGroup) {
+            this.scene.remove(this._fallbackGroup);
+            this._fallbackGroup = null;
+          }
+
+          // Aumentar luz ambiental para ver el modelo del hospital
+          this.scene.traverse(child => {
+            if (child.isAmbientLight) child.intensity = 2.5;
+          });
+          if (this.flashlight) this.flashlight.intensity = 12;
+
           this.onProgress(100, '¡Hospital cargado!');
           console.log('[GLB] Modelo cargado correctamente ✅');
           resolve(model);
