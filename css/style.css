@@ -47,11 +47,13 @@ html, body {
   justify-content: center;
   z-index: 100;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.8s ease;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 .screen.active {
   opacity: 1;
+  visibility: visible;
   pointer-events: all;
 }
 

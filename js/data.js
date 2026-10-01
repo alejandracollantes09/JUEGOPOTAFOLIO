@@ -217,12 +217,12 @@ export const RIDDLES = [
  * ajusta los valores x y z aquí. El y siempre en 0.
  */
 export const INTERACTION_POINTS = [
-  { workId: 'work-1', position: { x:  0, y: 0, z:  -2 }, radius: 2.5, label: 'Mesa de Operaciones'   },
-  { workId: 'work-2', position: { x:  0, y: 0, z:  -6 }, radius: 2.5, label: 'Gaveta de Morgue'       },
-  { workId: 'work-3', position: { x:  0, y: 0, z: -10 }, radius: 2.5, label: 'Pizarra del Laboratorio'},
-  { workId: 'work-4', position: { x:  0, y: 0, z: -14 }, radius: 2.5, label: 'Celda Psiquiátrica'     },
-  { workId: 'work-5', position: { x:  0, y: 0, z: -18 }, radius: 2.5, label: 'Archivador'             },
-  { workId: 'work-6', position: { x:  0, y: 0, z: -22 }, radius: 2.5, label: 'Altar de la Capilla'    },
-  { workId: 'work-7', position: { x:  0, y: 0, z: -26 }, radius: 2.5, label: 'Máquina de Rayos X'     },
-  { workId: 'work-8', position: { x:  0, y: 0, z: -30 }, radius: 2.5, label: 'Despacho del Director'  },
+  { workId: 'work-1', position: { x: -1.0, y: 6.44, z:  -2.5 }, radius: 2.6, label: 'Mesa de Operaciones'   },
+  { workId: 'work-2', position: { x:  1.5, y: 6.44, z:  -6.0 }, radius: 2.6, label: 'Gaveta de Morgue'       },
+  { workId: 'work-3', position: { x:  2.8, y: 6.44, z:  -9.5 }, radius: 2.6, label: 'Pizarra del Laboratorio'},
+  { workId: 'work-4', position: { x: -1.0, y: 6.44, z: -12.5 }, radius: 2.6, label: 'Celda Psiquiátrica'     },
+  { workId: 'work-5', position: { x:  0.0, y: 6.44, z:   1.5 }, radius: 2.6, label: 'Archivador'             },
+  { workId: 'work-6', position: { x: -2.0, y: 6.44, z:   4.5 }, radius: 2.6, label: 'Altar de la Capilla'    },
+  { workId: 'work-7', position: { x:  0.5, y: 6.44, z:   8.0 }, radius: 2.6, label: 'Máquina de Rayos X'     },
+  { workId: 'work-8', position: { x: -0.5, y: 6.44, z:  12.0 }, radius: 2.6, label: 'Despacho del Director'  },
 ];

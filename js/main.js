@@ -89,6 +89,7 @@ async function startGame() {
         ui.setLoadingProgress(percent, text);
       }
     );
+    window._engine = engine;
 
     // Cargar el modelo del hospital
     ui.setLoadingProgress(15, 'Cargando hospital…');

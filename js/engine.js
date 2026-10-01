@@ -93,12 +93,12 @@ export class HospitalEngine {
 
   // ── LUCES ────────────────────────────────────────────────
   _initLights() {
-    // Luz ambiental tenue
-    const ambient = new THREE.AmbientLight(0x221a1a, 1.2);
+    // Luz ambiental tenue pero que permita apreciar las texturas del hospital
+    const ambient = new THREE.AmbientLight(0x333b44, 2.2);
     this.scene.add(ambient);
 
     // Linterna (SpotLight anclada a la cámara del jugador)
-    this.flashlight = new THREE.SpotLight(0xfff5e0, 9, 24, Math.PI / 7, 0.45, 1.5);
+    this.flashlight = new THREE.SpotLight(0xffeedd, 12, 30, Math.PI / 6, 0.4, 1.2);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.set(1024, 1024);
     this.flashlight.shadow.bias = -0.0001;
@@ -107,28 +107,35 @@ export class HospitalEngine {
     this.flashlight.target.position.set(0, 0, -1);
     this.scene.add(this.camera);
 
-    // Luz de emergencia roja parpadeante en el pasillo
-    this.emergencyLight = new THREE.PointLight(0xff1100, 1.2, 10);
-    this.emergencyLight.position.set(0, 2.8, -10);
+    // Luz de emergencia roja parpadeante en el pasillo (cerca del techo Y=9.4)
+    this.emergencyLight = new THREE.PointLight(0xff1a1a, 1.8, 16, 2);
+    this.emergencyLight.position.set(0, 9.4, -6);
     this.scene.add(this.emergencyLight);
 
-    // Luces fluorescentes pálidas
+    // Luces fluorescentes pálidas del techo
     this._addCeilingLights();
   }
 
   _addCeilingLights() {
+    // Techo del hospital está a Y=10.12, distribuimos tubos fluorescentes a Y=9.6
     const positions = [
-      [-2, 3.2, -4], [2, 3.2, -10], [0, 3.2, -18], [-2, 3.2, -26], [2, 3.2, -34]
+      [0, 9.6, -12],
+      [-1, 9.6, -7],
+      [1, 9.6, -2],
+      [0, 9.6, 3],
+      [-0.5, 9.6, 8],
+      [0, 9.6, 12]
     ];
     positions.forEach(([x, y, z]) => {
-      const light = new THREE.PointLight(0x99bbdd, 0.8, 9, 2);
+      const light = new THREE.PointLight(0xaaccff, 0.9, 14, 1.8);
       light.position.set(x, y, z);
       this.scene.add(light);
 
       const bulb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.06, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0x99bbdd })
+        new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8),
+        new THREE.MeshBasicMaterial({ color: 0xddf0ff })
       );
+      bulb.rotation.z = Math.PI / 2;
       bulb.position.set(x, y, z);
       this.scene.add(bulb);
     });
@@ -242,6 +249,25 @@ export class HospitalEngine {
   }
 
   _createInteractableObject(point, parent = this.scene) {
+    // Si tenemos mallas de colisión del hospital, auto-detectar altura exacta del suelo
+    let floorY = (point.position && point.position.y !== undefined) ? point.position.y : 6.44;
+    if (this.collidableMeshes && this.collidableMeshes.length > 0) {
+      const probe = new THREE.Raycaster(
+        new THREE.Vector3(point.position.x, 16.0, point.position.z),
+        new THREE.Vector3(0, -1, 0),
+        0.1,
+        25.0
+      );
+      const hits = probe.intersectObjects(this.collidableMeshes, false);
+      const floorHit = hits.find(h => {
+        const wn = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+        return wn.y > 0.4;
+      });
+      if (floorHit) {
+        floorY = floorHit.point.y;
+      }
+    }
+
     const geo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
     const mat = new THREE.MeshStandardMaterial({
       color: 0x3a0000,
@@ -250,24 +276,26 @@ export class HospitalEngine {
       roughness: 0.7,
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(point.position.x, point.position.y + 0.4, point.position.z);
+    mesh.position.set(point.position.x, floorY + 0.38, point.position.z);
     mesh.castShadow = true;
     mesh.userData = { workId: point.workId, label: point.label };
     parent.add(mesh);
 
-    const glow = new THREE.PointLight(0xff3300, 1.2, 3.5);
-    glow.position.set(point.position.x, point.position.y + 1.4, point.position.z);
+    const glow = new THREE.PointLight(0xff3300, 1.2, 4.0);
+    glow.position.set(point.position.x, floorY + 1.2, point.position.z);
     parent.add(glow);
 
     const particle = new THREE.Mesh(
-      new THREE.SphereGeometry(0.06, 8, 8),
+      new THREE.SphereGeometry(0.08, 8, 8),
       new THREE.MeshBasicMaterial({ color: 0xff5555 })
     );
-    particle.position.set(point.position.x, point.position.y + 1.1, point.position.z);
+    particle.position.set(point.position.x, floorY + 1.0, point.position.z);
     particle.userData.floatOffset = Math.random() * Math.PI * 2;
     parent.add(particle);
 
     if (!this._particles) this._particles = [];
+    if (!this._interactableObjects) this._interactableObjects = [];
+    this._interactableObjects.push(mesh);
     this._particles.push(particle);
   }
 
@@ -282,26 +310,15 @@ export class HospitalEngine {
         (gltf) => {
           const model = gltf.scene;
 
-          // 1. Auto-fit y centrado de escala del hospital
-          const box    = new THREE.Box3().setFromObject(model);
-          const size   = new THREE.Vector3();
-          const center = new THREE.Vector3();
-          box.getSize(size);
-          box.getCenter(center);
+          // 1. Mantener escala arquitectónica nativa 1.0 (74.7m x 18.1m x 32.3m)
+          // El modelo GLB ya posee dimensiones reales métricas con pasillo central a Y=6.44
+          model.scale.set(1, 1, 1);
+          model.position.set(0, 0, 0);
 
-          const maxDim    = Math.max(size.x, size.y, size.z);
-          const targetSize = 40;
-          const scale     = maxDim > 0 ? targetSize / maxDim : 1;
-          model.scale.setScalar(scale);
-
-          model.position.set(
-            -center.x * scale,
-            -box.min.y * scale,
-            -center.z * scale
-          );
-
-          // Limpiar colisiones previas de fallback
+          // Limpiar colisiones previas y objetos de fallback
           this.collidableMeshes = [];
+          this._particles = [];
+          this._interactableObjects = [];
           if (this._fallbackGroup) {
             this.scene.remove(this._fallbackGroup);
             this._fallbackGroup = null;
@@ -310,10 +327,20 @@ export class HospitalEngine {
           // 2. Procesar puertas y mallas de colisión
           model.traverse(child => {
             const name = (child.name || '').toLowerCase();
-            const isDoor = name.includes('door') || name.includes('puerta');
+            let isDoor = name.includes('door') || name.includes('puerta');
+
+            // Si algún ancestro es puerta, todo el conjunto pertenece a la puerta
+            let p = child.parent;
+            while (p && !isDoor) {
+              if (p.userData?.isDoor || (p.name || '').toLowerCase().includes('door')) {
+                isDoor = true;
+                break;
+              }
+              p = p.parent;
+            }
 
             if (isDoor) {
-              // 🚪 Abrir puertas rotándolas para despejar el paso entre salas
+              // 🚪 Abrir puertas rotándolas para despejar el paso libre entre salas
               child.userData.isDoor = true;
               if (child.type === 'Group' || child.type === 'Object3D') {
                 child.rotation.y = Math.PI * 0.48; // ~86 grados abierta
@@ -344,19 +371,19 @@ export class HospitalEngine {
           this.hospitalModel = model;
           model.updateMatrixWorld(true);
 
-          // 3. Crear objetos interactivos en el hospital real
+          // 3. Crear objetos interactivos posicionados en el hospital real
           INTERACTION_POINTS.forEach(point => {
             this._createInteractableObject(point, this.scene);
           });
 
-          // 4. Ubicación de Spawn Seguro DENTRO del hospital
+          // 4. Ubicación de Spawn Seguro DENTRO del pasillo del hospital
           this._findSafeInteriorSpawn(model);
 
           // Ajustes de atmósfera lumínica
           this.scene.traverse(child => {
-            if (child.isAmbientLight) child.intensity = 2.0;
+            if (child.isAmbientLight) child.intensity = 2.2;
           });
-          if (this.flashlight) this.flashlight.intensity = 11;
+          if (this.flashlight) this.flashlight.intensity = 12;
 
           this.onProgress(100, '¡Hospital cargado!');
           console.log(`[GLB] Hospital cargado con ${this.doorMeshes.length} puertas abiertas y ${this.collidableMeshes.length} mallas de colisión.`);
@@ -379,26 +406,30 @@ export class HospitalEngine {
 
   // ── CALCULAR SPAWN POINT SEGURO DENTRO DEL HOSPITAL ────────
   _findSafeInteriorSpawn(model) {
-    // Probar candidatos de pasillo interior
+    // Probar candidatos de pasillo interior en planta baja (el pasillo central corre a lo largo de Z con X=0)
     const candidatePoints = [
-      { x: 0, z: 0 },
       { x: 0, z: -2 },
-      { x: 0, z: 3 },
-      { x: 2, z: -4 },
-      { x: -2, z: -4 },
-      { x: 0, z: -8 }
+      { x: 0, z: 0 },
+      { x: 0, z: -5 },
+      { x: 0, z: 2 },
+      { x: 1, z: -2 },
+      { x: -1, z: -2 }
     ];
 
     const probeRay = new THREE.Raycaster();
     let selectedSpawn = null;
 
     for (const cand of candidatePoints) {
-      probeRay.set(new THREE.Vector3(cand.x, 8.0, cand.z), new THREE.Vector3(0, -1, 0));
+      probeRay.set(new THREE.Vector3(cand.x, 16.0, cand.z), new THREE.Vector3(0, -1, 0));
+      probeRay.far = 25.0;
       const hits = probeRay.intersectObjects(this.collidableMeshes, false);
 
       if (hits.length > 0) {
-        // Encontrar el piso más alto razonable (dentro de la planta)
-        const floorHit = hits.find(h => h.point.y >= 0 && h.point.y <= 4.0 && h.face && h.face.normal.y > 0.6);
+        // Encontrar el piso de la planta principal (suelo a Y ~ 6.44)
+        const floorHit = hits.find(h => {
+          const worldNormal = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+          return worldNormal.y > 0.5 && h.point.y >= 5.0 && h.point.y <= 8.0;
+        });
         if (floorHit) {
           selectedSpawn = new THREE.Vector3(cand.x, floorHit.point.y + PLAYER_HEIGHT, cand.z);
           break;
@@ -410,9 +441,13 @@ export class HospitalEngine {
       this.camera.position.copy(selectedSpawn);
       console.log(`[Spawn] Jugador ubicado en el interior del hospital: (${selectedSpawn.x.toFixed(2)}, ${selectedSpawn.y.toFixed(2)}, ${selectedSpawn.z.toFixed(2)})`);
     } else {
-      // Fallback seguro sobre el suelo interior
-      this.camera.position.set(0, PLAYER_HEIGHT, 0);
+      // Fallback exacto verificado sobre el suelo interior del pasillo (Y = 6.44 + 1.7 = 8.14)
+      this.camera.position.set(0, 8.14, -2);
+      console.log(`[Spawn] Usando fallback interior verificado: (0.00, 8.14, -2.00)`);
     }
+
+    // Mirar hacia el fondo del pasillo (-Z)
+    this.camera.rotation.set(0, 0, 0);
   }
 
   // ── INTERACCIÓN ──────────────────────────────────────────
@@ -573,26 +608,29 @@ export class HospitalEngine {
     if (this.collidableMeshes.length === 0) return;
 
     const rayOrigin = this.camera.position.clone();
-    rayOrigin.y += 0.5; // Empezar sondeo ligeramente arriba del jugador
+    rayOrigin.y += 0.8; // Empezar sondeo ligeramente arriba del jugador
 
     this._downRay.set(rayOrigin, new THREE.Vector3(0, -1, 0));
-    this._downRay.far = 4.0;
+    this._downRay.far = 5.0;
     const hits = this._downRay.intersectObjects(this.collidableMeshes, false);
 
     if (hits.length > 0) {
-      // Buscar el piso más cercano debajo del jugador
-      const floorHit = hits.find(h => h.face && h.face.normal.y > 0.4);
+      // Buscar el piso más cercano debajo del jugador con normal vertical hacia arriba
+      const floorHit = hits.find(h => {
+        const wn = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+        return wn.y > 0.4;
+      });
       if (floorHit) {
         const targetCamY = floorHit.point.y + PLAYER_HEIGHT;
         const diff = targetCamY - this.camera.position.y;
 
-        // Si es un escalón o rampa transitable
+        // Subir o bajar escalones y rampas
         if (diff > 0 && diff <= MAX_STEP_UP) {
-          // Subir suavemente el escalón
-          this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.35);
+          this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.4);
         } else if (diff < 0 && diff >= -MAX_STEP_DOWN) {
-          // Bajar suavemente el escalón
-          this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.35);
+          this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamY, 0.4);
+        } else if (Math.abs(diff) < 0.04) {
+          this.camera.position.y = targetCamY;
         }
       }
     }
