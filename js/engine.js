@@ -37,8 +37,7 @@ export class HospitalEngine {
     this.controllers       = [];          // mandos WebXR
 
     this._raycaster        = new THREE.Raycaster();
-    this._downRay          = new THREE.Raycaster();
-    this._downRay.direction.set(0, -1, 0);
+    this._downRay          = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
 
     this._initRenderer();
     this._initScene();
@@ -61,7 +60,7 @@ export class HospitalEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type    = THREE.PCFShadowMap;
     this.renderer.toneMapping       = THREE.ReinhardToneMapping;
     this.renderer.toneMappingExposure = 0.55;
     this.renderer.setClearColor(0x050505);
@@ -391,8 +390,6 @@ export class HospitalEngine {
     ];
 
     const probeRay = new THREE.Raycaster();
-    probeRay.direction.set(0, -1, 0);
-
     let selectedSpawn = null;
 
     for (const cand of candidatePoints) {
