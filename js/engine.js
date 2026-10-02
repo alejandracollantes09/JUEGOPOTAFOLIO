@@ -93,18 +93,19 @@ export class HospitalEngine {
 
   // ── LUCES ────────────────────────────────────────────────
   _initLights() {
-    // Luz ambiental tenue pero que permita apreciar las texturas del hospital
-    const ambient = new THREE.AmbientLight(0x333b44, 2.2);
+    // Luz ambiental muy tenue — atmósfera de terror oscuro
+    const ambient = new THREE.AmbientLight(0x1a1a2e, 0.5);
     this.scene.add(ambient);
 
-    // Linterna (SpotLight anclada a la cámara del jugador)
-    this.flashlight = new THREE.SpotLight(0xffeedd, 12, 30, Math.PI / 6, 0.4, 1.2);
+    // Linterna — cono estrecho (18°) apuntando al frente exacto de la cámara
+    this.flashlight = new THREE.SpotLight(0xfff0dd, 15, 28, Math.PI / 10, 0.35, 1.1);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.set(1024, 1024);
     this.flashlight.shadow.bias = -0.0001;
+    this.flashlight.position.set(0, 0, 0);         // ojo del jugador
     this.camera.add(this.flashlight);
     this.camera.add(this.flashlight.target);
-    this.flashlight.target.position.set(0, 0, -1);
+    this.flashlight.target.position.set(0, 0, -1); // directo al frente
     this.scene.add(this.camera);
 
     // Luz de emergencia roja parpadeante en el pasillo (cerca del techo Y=9.4)
@@ -117,23 +118,26 @@ export class HospitalEngine {
   }
 
   _addCeilingLights() {
-    // Techo del hospital está a Y=10.12, distribuimos tubos fluorescentes a Y=9.6
+    // Luces distribuidas a lo largo del recorrido completo del hospital (z: 0 a -38)
     const positions = [
-      [0, 9.6, -12],
-      [-1, 9.6, -7],
-      [1, 9.6, -2],
-      [0, 9.6, 3],
-      [-0.5, 9.6, 8],
-      [0, 9.6, 12]
+      [  0, 9.6,  -2 ],
+      [ -1, 9.6,  -7 ],
+      [  1, 9.6, -13 ],
+      [  0, 9.6, -18 ],
+      [ -1, 9.6, -23 ],
+      [  1, 9.6, -28 ],
+      [  0, 9.6, -33 ],
+      [  0, 9.6, -38 ],
     ];
     positions.forEach(([x, y, z]) => {
-      const light = new THREE.PointLight(0xaaccff, 0.9, 14, 1.8);
+      // Fluorescentes tenues — la mayoría fundidos
+      const light = new THREE.PointLight(0x8899bb, 0.45, 10, 2);
       light.position.set(x, y, z);
       this.scene.add(light);
 
       const bulb = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8),
-        new THREE.MeshBasicMaterial({ color: 0xddf0ff })
+        new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8),
+        new THREE.MeshBasicMaterial({ color: 0xbbccee })
       );
       bulb.rotation.z = Math.PI / 2;
       bulb.position.set(x, y, z);

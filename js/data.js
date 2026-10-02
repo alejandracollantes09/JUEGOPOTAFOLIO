@@ -207,22 +207,21 @@ export const RIDDLES = [
 ];
 
 /**
- * PUNTOS INTERACTIVOS en el mundo 3D
- * Todos concentrados en UN SOLO PASILLO del hospital.
+ * PUNTOS INTERACTIVOS — Una caja por habitación
+ * Distribuidas en zigzag por el pasillo del hospital.
+ * El jugador empieza en (0, 6.44, 0) y camina hacia z negativo.
  * 
- * El jugador empieza en (0, 0, 0) y camina en línea recta.
- * Cada punto está separado ~4 unidades del anterior.
- * 
- * ⚙️ Si necesitas mover los puntos (porque están dentro de una pared),
- * ajusta los valores x y z aquí. El y siempre en 0.
+ * ⚙️ Si una caja está dentro de una pared, ajusta solo x y z.
+ *    El valor y=6.44 es el nivel de suelo del hospital — no cambiar.
  */
 export const INTERACTION_POINTS = [
-  { workId: 'work-1', position: { x: -1.0, y: 6.44, z:  -2.5 }, radius: 2.6, label: 'Mesa de Operaciones'   },
-  { workId: 'work-2', position: { x:  1.5, y: 6.44, z:  -6.0 }, radius: 2.6, label: 'Gaveta de Morgue'       },
-  { workId: 'work-3', position: { x:  2.8, y: 6.44, z:  -9.5 }, radius: 2.6, label: 'Pizarra del Laboratorio'},
-  { workId: 'work-4', position: { x: -1.0, y: 6.44, z: -12.5 }, radius: 2.6, label: 'Celda Psiquiátrica'     },
-  { workId: 'work-5', position: { x:  0.0, y: 6.44, z:   1.5 }, radius: 2.6, label: 'Archivador'             },
-  { workId: 'work-6', position: { x: -2.0, y: 6.44, z:   4.5 }, radius: 2.6, label: 'Altar de la Capilla'    },
-  { workId: 'work-7', position: { x:  0.5, y: 6.44, z:   8.0 }, radius: 2.6, label: 'Máquina de Rayos X'     },
-  { workId: 'work-8', position: { x: -0.5, y: 6.44, z:  12.0 }, radius: 2.6, label: 'Despacho del Director'  },
+  { workId: 'work-1', position: { x:  0.0, y: 6.44, z:  -3 }, radius: 2.6, label: 'Sala de Cirugía'       },
+  { workId: 'work-2', position: { x: -3.0, y: 6.44, z:  -9 }, radius: 2.6, label: 'Morgue'                 },
+  { workId: 'work-3', position: { x:  3.0, y: 6.44, z: -14 }, radius: 2.6, label: 'Laboratorio'            },
+  { workId: 'work-4', position: { x:  0.0, y: 6.44, z: -20 }, radius: 2.6, label: 'Celda Psiquiátrica'     },
+  { workId: 'work-5', position: { x: -3.0, y: 6.44, z: -25 }, radius: 2.6, label: 'Sala de Rayos X'        },
+  { workId: 'work-6', position: { x:  3.0, y: 6.44, z: -30 }, radius: 2.6, label: 'Capilla'                },
+  { workId: 'work-7', position: { x:  0.0, y: 6.44, z: -35 }, radius: 2.6, label: 'Pasillo del Fondo'      },
+  { workId: 'work-8', position: { x:  0.0, y: 6.44, z: -40 }, radius: 2.6, label: 'Despacho del Director'  },
 ];
+
