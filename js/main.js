@@ -2,9 +2,9 @@
 //  HOSPITAL OLVIDADO — Punto de entrada principal
 // ════════════════════════════════════════════════════════
 
-import { HospitalEngine } from './engine.js';
-import { UIManager }      from './ui.js';
-import { audioManager }   from './audio.js';
+import { HospitalEngine } from './engine.js?v=4.0';
+import { UIManager }      from './ui.js?v=4.0';
+import { audioManager }   from './audio.js?v=4.0';
 
 // ── Estado global ────────────────────────────────────────
 let engine = null;

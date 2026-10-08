@@ -6,8 +6,8 @@
 import * as THREE from 'three';
 import { GLTFLoader }        from 'three/addons/loaders/GLTFLoader.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-import { INTERACTION_POINTS }  from './data.js';
-import { audioManager }        from './audio.js';
+import { INTERACTION_POINTS }  from './data.js?v=4.0';
+import { audioManager }        from './audio.js?v=4.0';
 
 // ── Constantes de movimiento y física ─────────────────────
 const MOVE_SPEED        = 4.2;   // unidades/segundo
@@ -280,30 +280,34 @@ export class HospitalEngine {
       }
     }
 
-    const geo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
+    const geo = new THREE.BoxGeometry(0.9, 0.9, 0.9);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x3a0000,
-      emissive: 0x880000,
-      emissiveIntensity: 0.8,
-      roughness: 0.6,
+      color: 0x5a0000,
+      emissive: 0xaa0000,
+      emissiveIntensity: 0.9,
+      roughness: 0.5,
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(point.position.x, floorY + 0.38, point.position.z);
+    mesh.position.set(point.position.x, floorY + 0.45, point.position.z);
     mesh.castShadow = true;
     mesh.userData = { workId: point.workId, label: point.label };
     parent.add(mesh);
 
-    const glow = new THREE.PointLight(0xff3300, 1.4, 4.5);
-    glow.position.set(point.position.x, floorY + 1.2, point.position.z);
+    // Luz puntual brillante roja sobre la caja
+    const glow = new THREE.PointLight(0xff2200, 2.0, 6.0);
+    glow.position.set(point.position.x, floorY + 1.4, point.position.z);
     parent.add(glow);
 
+    // Orbe flotante brillante encima de la caja
     const particle = new THREE.Mesh(
-      new THREE.SphereGeometry(0.08, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff5555 })
+      new THREE.SphereGeometry(0.12, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xff3333 })
     );
-    particle.position.set(point.position.x, floorY + 1.0, point.position.z);
+    particle.position.set(point.position.x, floorY + 1.25, point.position.z);
     particle.userData.floatOffset = Math.random() * Math.PI * 2;
     parent.add(particle);
+
+    console.log(`[Caja 3D] ${point.label} situada exactamente en X:${point.position.x} Y:${(floorY + 0.45).toFixed(2)} Z:${point.position.z}`);
 
     if (!this._particles) this._particles = [];
     if (!this._interactableObjects) this._interactableObjects = [];
