@@ -47,6 +47,7 @@ export class HospitalEngine {
     this._initWebXR();
     this._bindEvents();
     this._buildFallbackEnvironment(); // mientras carga el GLB
+    this._initPositionDisplay();      // 📍 coordenadas en pantalla
   }
 
   // ── RENDERER (WebGPU / WebGL con soporte WebXR) ───────────
@@ -97,8 +98,8 @@ export class HospitalEngine {
     const ambient = new THREE.AmbientLight(0x1a1a2e, 0.5);
     this.scene.add(ambient);
 
-    // Linterna — cono estrecho (18°) apuntando al frente exacto de la cámara
-    this.flashlight = new THREE.SpotLight(0xfff0dd, 15, 28, Math.PI / 10, 0.35, 1.1);
+    // Linterna — cono amplio (54°) apuntando al frente exacto de la cámara
+    this.flashlight = new THREE.SpotLight(0xfff0dd, 15, 28, Math.PI / 3.3, 0.35, 1.1);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.set(1024, 1024);
     this.flashlight.shadow.bias = -0.0001;
@@ -253,14 +254,21 @@ export class HospitalEngine {
   }
 
   _createInteractableObject(point, parent = this.scene) {
-    // Si tenemos mallas de colisión del hospital, auto-detectar altura exacta del suelo
-    let floorY = (point.position && point.position.y !== undefined) ? point.position.y : 6.44;
+    // Si se pasa la coordenada de cámara Y, el suelo estimado está a Y - PLAYER_HEIGHT (1.7)
+    let floorY = (point.position && point.position.y !== undefined)
+      ? point.position.y - PLAYER_HEIGHT
+      : 6.44;
+
     if (this.collidableMeshes && this.collidableMeshes.length > 0) {
+      // Lanzamos un rayo desde arriba de la posición del punto hacia abajo para detectar el piso exacto
+      const probeStartY = (point.position && point.position.y !== undefined)
+        ? point.position.y + 0.6
+        : 14.0;
       const probe = new THREE.Raycaster(
-        new THREE.Vector3(point.position.x, 16.0, point.position.z),
+        new THREE.Vector3(point.position.x, probeStartY, point.position.z),
         new THREE.Vector3(0, -1, 0),
-        0.1,
-        25.0
+        0.05,
+        6.0
       );
       const hits = probe.intersectObjects(this.collidableMeshes, false);
       const floorHit = hits.find(h => {
@@ -275,9 +283,9 @@ export class HospitalEngine {
     const geo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
     const mat = new THREE.MeshStandardMaterial({
       color: 0x3a0000,
-      emissive: 0x660000,
-      emissiveIntensity: 0.6,
-      roughness: 0.7,
+      emissive: 0x880000,
+      emissiveIntensity: 0.8,
+      roughness: 0.6,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(point.position.x, floorY + 0.38, point.position.z);
@@ -285,7 +293,7 @@ export class HospitalEngine {
     mesh.userData = { workId: point.workId, label: point.label };
     parent.add(mesh);
 
-    const glow = new THREE.PointLight(0xff3300, 1.2, 4.0);
+    const glow = new THREE.PointLight(0xff3300, 1.4, 4.5);
     glow.position.set(point.position.x, floorY + 1.2, point.position.z);
     parent.add(glow);
 
@@ -375,7 +383,15 @@ export class HospitalEngine {
           this.hospitalModel = model;
           model.updateMatrixWorld(true);
 
-          // 3. Crear objetos interactivos posicionados en el hospital real
+          // Eliminar el entorno de respaldo para que no quede el pasillo provisional ni sus cajas flotando
+          if (this._fallbackGroup) {
+            this.scene.remove(this._fallbackGroup);
+            this._fallbackGroup = null;
+          }
+          this._interactableObjects = [];
+          this._particles = [];
+
+          // 3. Crear objetos interactivos en sus habitaciones exactas
           INTERACTION_POINTS.forEach(point => {
             this._createInteractableObject(point, this.scene);
           });
@@ -383,11 +399,11 @@ export class HospitalEngine {
           // 4. Ubicación de Spawn Seguro DENTRO del pasillo del hospital
           this._findSafeInteriorSpawn(model);
 
-          // Ajustes de atmósfera lumínica
+          // Ajustes de atmósfera lumínica de terror oscuro
           this.scene.traverse(child => {
-            if (child.isAmbientLight) child.intensity = 2.2;
+            if (child.isAmbientLight) child.intensity = 0.5;
           });
-          if (this.flashlight) this.flashlight.intensity = 12;
+          if (this.flashlight) this.flashlight.intensity = 15;
 
           this.onProgress(100, '¡Hospital cargado!');
           console.log(`[GLB] Hospital cargado con ${this.doorMeshes.length} puertas abiertas y ${this.collidableMeshes.length} mallas de colisión.`);
@@ -468,8 +484,9 @@ export class HospitalEngine {
 
     INTERACTION_POINTS.forEach(point => {
       const dx = camPos.x - point.position.x;
+      const dy = camPos.y - point.position.y;
       const dz = camPos.z - point.position.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
+      const dist = Math.sqrt(dx * dx + dy * dy * 0.7 + dz * dz);
       if (dist < point.radius && dist < closestDist) {
         closestDist = dist;
         closest = point;
@@ -516,6 +533,7 @@ export class HospitalEngine {
     this._updateGroundElevation();
     this._updateEffects(t);
     this._checkProximity();
+    this._updatePositionDisplay();
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -667,4 +685,39 @@ export class HospitalEngine {
   unlockPointer() { this.controls.unlock(); }
 
   get isPointerLocked() { return this.controls.isLocked; }
+
+  // ── DEBUG: muestra posición del jugador en pantalla ─────────
+  // Esto ayuda a encontrar las coordenadas exactas para poner las cajas
+  _initPositionDisplay() {
+    this._posDiv = document.createElement('div');
+    this._posDiv.id = 'pos-debug';
+    Object.assign(this._posDiv.style, {
+      position: 'fixed',
+      top: '18px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(5, 5, 10, 0.88)',
+      color: '#00ff88',
+      border: '2px solid #00aa55',
+      boxShadow: '0 0 14px rgba(0, 255, 136, 0.4)',
+      fontFamily: 'monospace, sans-serif',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      padding: '7px 18px',
+      borderRadius: '8px',
+      zIndex: '99999',
+      pointerEvents: 'none',
+      letterSpacing: '0.05em',
+      textAlign: 'center',
+      whiteSpace: 'nowrap'
+    });
+    document.body.appendChild(this._posDiv);
+  }
+
+  _updatePositionDisplay() {
+    if (!this._posDiv) return;
+    const p = this.camera.position;
+    this._posDiv.innerHTML =
+      `📍 <span style="color:#ffffff">Coordenadas:</span> X: <span style="color:#ffff00">${p.x.toFixed(2)}</span> &nbsp;|&nbsp; Y: <span style="color:#00ffff">${p.y.toFixed(2)}</span> &nbsp;|&nbsp; Z: <span style="color:#ff77ff">${p.z.toFixed(2)}</span>`;
+  }
 }

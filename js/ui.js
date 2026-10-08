@@ -19,6 +19,7 @@ export class UIManager {
 
     this._buildKeySlots();
     this._bindButtons();
+    this._updateProgress();
   }
 
   // ── SLOTS DE LLAVES EN HUD ───────────────────────────────
